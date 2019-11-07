@@ -2,11 +2,12 @@
 {-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 
 module Server
   ( runServer
-  , myFunction
   )
 where
 
@@ -16,24 +17,28 @@ import           System.Environment             ( getEnv )
 import           Servant.API
 import           Servant.Server
 import           Numeric.Extra                  ( intToDouble )
-
+import GHC.Generics (Generic)
+import Data.Aeson
+import Data.Monoid
+import Servant
+import Web.FormUrlEncoded(FromForm(..), ToForm(..))
 
 type MyAPI
   = 
-    "api" :> "ping" :> Get '[JSON] String :<|>
-    "api" :> "calculate" :> ReqBody '[JSON] [Int] :> Post '[JSON] String
+    "api" :> "ping" :> ReqBody '[FormUrlEncoded] SlackPayload :> Post '[JSON] String :<|>
+    "api" :> "calculate" :> ReqBody '[FormUrlEncoded] SlackPayload :> Post '[JSON] String
 
-pingHandler :: Handler String
-pingHandler = return "ping"
+pingHandler :: SlackPayload -> Handler String
+pingHandler _ = return "ping"
 
-oddsHandler :: [Int] -> Handler String
-oddsHandler odds = return $ calculateOdds odds
+oddsHandler :: SlackPayload -> Handler String
+oddsHandler slackPayload = return $ calculateOdds (text slackPayload)
 
 myAPI :: Proxy MyAPI
 myAPI = Proxy :: Proxy MyAPI
 
 myServer :: Server MyAPI
-myServer = pingHandler :<|> oddsHandler
+myServer =  pingHandler :<|> oddsHandler
 
 runServer :: IO ()
 runServer = do
@@ -41,8 +46,12 @@ runServer = do
   -- let port = 8005
   run port (serve myAPI myServer)
 
-myFunction :: Int -> Int -> Int -> Int
-myFunction a b c = a * b + c
+data SlackPayload = SlackPayload
+  { text :: [Int]
+  } deriving (Eq, Show, Generic)
+
+instance FromForm SlackPayload
+instance ToForm SlackPayload
 
 -- Calculator Stuff --
 

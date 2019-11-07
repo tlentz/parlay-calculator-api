@@ -27,6 +27,7 @@ dependencies:
 - warp
 - servant
 - extra
+- http-api-data
 
 library:
   source-dirs: src

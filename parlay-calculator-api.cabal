@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 14b30bd5af3b47e9f4416ce278278f47814b9dcbaf1b7ce6120a8a7a4f08d3fe
+-- hash: e0af1a6e92bc8e030f2998da499ea6ed36021a3b04415a7a7c8641ef8cd7e33d
 
 name:           parlay-calculator-api
 version:        0.1.0.0
@@ -36,6 +36,7 @@ library
       aeson
     , base >=4.7 && <5
     , extra
+    , http-api-data
     , servant
     , servant-server
     , wai
@@ -53,6 +54,7 @@ executable parlay-calculator-api
       aeson
     , base >=4.7 && <5
     , extra
+    , http-api-data
     , parlay-calculator-api
     , servant
     , servant-server
@@ -72,6 +74,7 @@ test-suite parlay-calculator-api-test
       aeson
     , base >=4.7 && <5
     , extra
+    , http-api-data
     , parlay-calculator-api
     , servant
     , servant-server
