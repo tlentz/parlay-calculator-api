@@ -1,0 +1,1 @@
+web: parlay-calculator-api   # $ cat *.cabal | grep executable

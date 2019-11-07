@@ -1,0 +1,77 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 13f95912a20962c7bf12ca17ad3e9c88152664298527a7162d31277ddf2898f0
+
+name:           parlay-calculator-api
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/sim-space#readme>
+homepage:       https://github.com/tlentz#readme
+bug-reports:    https://github.com/tlentz/issues
+author:         Tyler Lentz
+maintainer:     tyler.cg.lentz@gmail.com
+copyright:      2019 Tyler Lentz
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/tlentz
+
+library
+  exposed-modules:
+      Server
+  other-modules:
+      Paths_parlay_calculator_api
+  hs-source-dirs:
+      src
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , servant
+    , servant-server
+    , wai
+    , warp
+  default-language: Haskell2010
+
+executable parlay-calculator-api
+  main-is: Main.hs
+  other-modules:
+      Paths_parlay_calculator_api
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , parlay-calculator-api
+    , servant
+    , servant-server
+    , wai
+    , warp
+  default-language: Haskell2010
+
+test-suite parlay-calculator-api-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_parlay_calculator_api
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , parlay-calculator-api
+    , servant
+    , servant-server
+    , wai
+    , warp
+  default-language: Haskell2010
