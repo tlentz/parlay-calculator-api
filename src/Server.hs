@@ -22,13 +22,16 @@ import Data.Aeson
 import Data.Monoid
 import Servant
 import Web.FormUrlEncoded(FromForm(..), ToForm(..))
+import Data.Text (Text, replace, append)
+import Data.String.Conversions (cs)
+import Text.Read (readMaybe)
 
 type MyAPI
   = 
     "api" :> "ping" :> ReqBody '[FormUrlEncoded] SlackPayload :> Post '[JSON] SlackResponseMessage :<|>
     "api" :> "calculate" :> ReqBody '[FormUrlEncoded] SlackPayload :> Post '[JSON] SlackResponseMessage
 
-mkSlackResponseMessage :: String -> SlackResponseMessage
+mkSlackResponseMessage :: Text -> SlackResponseMessage
 mkSlackResponseMessage =
   SlackResponseMessage "in_channel"
 
@@ -36,7 +39,10 @@ pingHandler :: SlackPayload -> Handler SlackResponseMessage
 pingHandler _ = return $ mkSlackResponseMessage "ping"
 
 oddsHandler :: SlackPayload -> Handler SlackResponseMessage
-oddsHandler slackPayload = return $ mkSlackResponseMessage $ calculateOdds $ read (text slackPayload)
+oddsHandler slackPayload = return $ mkSlackResponseMessage $ calculateOdds $ parseOddsList (text slackPayload)
+
+parseOddsList :: Text -> [Int]
+parseOddsList str = read $ cs $ replace "+" "" str
 
 myAPI :: Proxy MyAPI
 myAPI = Proxy :: Proxy MyAPI
@@ -51,7 +57,7 @@ runServer = do
   run port (serve myAPI myServer)
 
 data SlackPayload = SlackPayload
-  { text :: String
+  { text :: Text
   } deriving (Eq, Show, Generic)
 
 instance ToForm SlackPayload
@@ -59,8 +65,8 @@ instance ToForm SlackPayload
 instance FromForm SlackPayload
 
 data SlackResponseMessage = SlackResponseMessage
-  { response_type :: String
-  , response_text :: String
+  { response_type :: Text
+  , response_text :: Text
   } deriving (Eq, Show, Generic)
 
 instance ToJSON SlackResponseMessage where
@@ -91,16 +97,17 @@ americanToDecimal x =
 round5dp :: Double -> Double
 round5dp x = fromIntegral (round $ x * 1e5) / 1e5
 
-formatAmerican :: Int -> String
-formatAmerican n = if n > 0 then "+" ++ (show n) else show n
+formatAmerican :: Int -> Text
+formatAmerican n = if n > 0 then "+" `append` (cs $ show n) else cs $ show n
 
-calculateOdds :: [Int] -> String
-calculateOdds odds = case parseOdds odds of
-  Left  str   -> str
-  Right odds' -> formatAmerican $ decimalToAmerican $ foldr (*) 1 $ map
+calculateOdds :: [Int] -> Text
+calculateOdds odds =
+  formatAmerican $ decimalToAmerican $ foldr (*) 1 $ map
     americanToDecimal
-    odds'
+    odds
 
-parseOdds :: [Int] -> Either String [Int]
-parseOdds odds =
-  if elem 0 odds then Left "Odds cannot contain 0" else Right odds
+parseOdds :: Text -> Either Text [Int]
+parseOdds txt =
+  case readMaybe $ cs $ replace "+" "" txt of
+    Nothing -> Left "Could not parse odds"
+    Just odds -> if elem 0 odds then Left "Odds cannot contain 0" else Right odds

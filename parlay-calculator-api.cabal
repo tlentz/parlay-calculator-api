@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e0af1a6e92bc8e030f2998da499ea6ed36021a3b04415a7a7c8641ef8cd7e33d
+-- hash: 5e5b5a9f52a1835d7c2a8ef1142a298a753fd7b83ecccc4167c89db007227afd
 
 name:           parlay-calculator-api
 version:        0.1.0.0
@@ -39,6 +39,8 @@ library
     , http-api-data
     , servant
     , servant-server
+    , string-conversions
+    , text
     , wai
     , warp
   default-language: Haskell2010
@@ -58,6 +60,8 @@ executable parlay-calculator-api
     , parlay-calculator-api
     , servant
     , servant-server
+    , string-conversions
+    , text
     , wai
     , warp
   default-language: Haskell2010
@@ -78,6 +82,8 @@ test-suite parlay-calculator-api-test
     , parlay-calculator-api
     , servant
     , servant-server
+    , string-conversions
+    , text
     , wai
     , warp
   default-language: Haskell2010

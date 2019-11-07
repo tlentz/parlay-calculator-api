@@ -28,6 +28,8 @@ dependencies:
 - servant
 - extra
 - http-api-data
+- text
+- string-conversions
 
 library:
   source-dirs: src
