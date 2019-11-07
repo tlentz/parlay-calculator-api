@@ -37,8 +37,8 @@ myServer = pingHandler :<|> oddsHandler
 
 runServer :: IO ()
 runServer = do
-  -- port <- read <$> getEnv "PORT"
-  let port = 8005
+  port <- read <$> getEnv "PORT"
+  -- let port = 8005
   run port (serve myAPI myServer)
 
 myFunction :: Int -> Int -> Int -> Int
