@@ -29,14 +29,14 @@ type MyAPI
     "api" :> "calculate" :> ReqBody '[FormUrlEncoded] SlackPayload :> Post '[JSON] SlackResponseMessage
 
 mkSlackResponseMessage :: String -> SlackResponseMessage
-mkSlackResponseMessage str =
-  SlackResponseMessage "in_channel" str
+mkSlackResponseMessage =
+  SlackResponseMessage "in_channel"
 
 pingHandler :: SlackPayload -> Handler SlackResponseMessage
 pingHandler _ = return $ mkSlackResponseMessage "ping"
 
 oddsHandler :: SlackPayload -> Handler SlackResponseMessage
-oddsHandler slackPayload = return $ mkSlackResponseMessage $ calculateOdds (text slackPayload)
+oddsHandler slackPayload = return $ mkSlackResponseMessage $ calculateOdds $ read (text slackPayload)
 
 myAPI :: Proxy MyAPI
 myAPI = Proxy :: Proxy MyAPI
@@ -51,11 +51,12 @@ runServer = do
   run port (serve myAPI myServer)
 
 data SlackPayload = SlackPayload
-  { text :: [Int]
+  { text :: String
   } deriving (Eq, Show, Generic)
 
-instance FromForm SlackPayload
 instance ToForm SlackPayload
+
+instance FromForm SlackPayload
 
 data SlackResponseMessage = SlackResponseMessage
   { response_type :: String
