@@ -39,10 +39,10 @@ pingHandler :: SlackPayload -> Handler SlackResponseMessage
 pingHandler _ = return $ mkSlackResponseMessage "ping"
 
 oddsHandler :: SlackPayload -> Handler SlackResponseMessage
-oddsHandler slackPayload = return $ mkSlackResponseMessage $ calculateOdds $ parseOddsList (text slackPayload)
-
-parseOddsList :: Text -> [Int]
-parseOddsList str = read $ cs $ replace "+" "" str
+oddsHandler slackPayload = return $ mkSlackResponseMessage $
+  case parseOdds (text slackPayload) of
+    Left str -> str
+    Right odds -> calculateOdds odds
 
 myAPI :: Proxy MyAPI
 myAPI = Proxy :: Proxy MyAPI
