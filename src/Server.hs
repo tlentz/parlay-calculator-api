@@ -25,14 +25,18 @@ import Web.FormUrlEncoded(FromForm(..), ToForm(..))
 
 type MyAPI
   = 
-    "api" :> "ping" :> ReqBody '[FormUrlEncoded] SlackPayload :> Post '[JSON] String :<|>
-    "api" :> "calculate" :> ReqBody '[FormUrlEncoded] SlackPayload :> Post '[JSON] String
+    "api" :> "ping" :> ReqBody '[FormUrlEncoded] SlackPayload :> Post '[JSON] SlackResponseMessage :<|>
+    "api" :> "calculate" :> ReqBody '[FormUrlEncoded] SlackPayload :> Post '[JSON] SlackResponseMessage
 
-pingHandler :: SlackPayload -> Handler String
-pingHandler _ = return "ping"
+mkSlackResponseMessage :: String -> SlackResponseMessage
+mkSlackResponseMessage str =
+  SlackResponseMessage "in_channel" str
 
-oddsHandler :: SlackPayload -> Handler String
-oddsHandler slackPayload = return $ calculateOdds (text slackPayload)
+pingHandler :: SlackPayload -> Handler SlackResponseMessage
+pingHandler _ = return $ mkSlackResponseMessage "ping"
+
+oddsHandler :: SlackPayload -> Handler SlackResponseMessage
+oddsHandler slackPayload = return $ mkSlackResponseMessage $ calculateOdds (text slackPayload)
 
 myAPI :: Proxy MyAPI
 myAPI = Proxy :: Proxy MyAPI
@@ -53,6 +57,20 @@ data SlackPayload = SlackPayload
 instance FromForm SlackPayload
 instance ToForm SlackPayload
 
+data SlackResponseMessage = SlackResponseMessage
+  { response_type :: String
+  , response_text :: String
+  } deriving (Eq, Show, Generic)
+
+instance ToJSON SlackResponseMessage where
+  toJSON (SlackResponseMessage response_type response_text) =
+    object ["response_type" .= response_type, "text" .= response_text]
+
+instance FromJSON SlackResponseMessage where
+  parseJSON (Object v) = SlackResponseMessage
+    <$> v .: "response_type"
+    <*> v .: "text"
+    
 -- Calculator Stuff --
 
 testVals :: [Int]
