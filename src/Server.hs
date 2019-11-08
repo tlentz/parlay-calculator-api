@@ -236,7 +236,7 @@ mkTeaserBlockResponse resp =
     Left txt -> BlockResponse [ Block "section" $ (Just $ BlockText "mrkdwn" txt) ]
     Right (points, txt) ->
       BlockResponse $
-        [ Block "section" $ (Just $ BlockText "mrkdwn" ("*" `append` (cs $ show $ points) `append` "Point Teaser Payouts*"))
+        [ Block "section" $ (Just $ BlockText "mrkdwn" ("*" `append` (cs $ show $ points) `append` " Point Teaser Payouts*"))
         , Block "divider" Nothing
         , Block "section" $ (Just $ BlockText "mrkdwn" txt)
         ]
