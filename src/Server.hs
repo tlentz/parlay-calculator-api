@@ -11,12 +11,12 @@ module Server
   )
 where
 
-import           Data.Proxy                     ( Proxy(..) )
-import           Network.Wai.Handler.Warp       ( run )
-import           System.Environment             ( getEnv )
-import           Servant.API
-import           Servant.Server
-import           Numeric.Extra                  ( intToDouble )
+import Data.Proxy (Proxy(..))
+import Network.Wai.Handler.Warp (run)
+import System.Environment (getEnv)
+import Servant.API
+import Servant.Server
+import Numeric.Extra (intToDouble)
 import GHC.Generics (Generic)
 import Data.Aeson
 import Data.Monoid
