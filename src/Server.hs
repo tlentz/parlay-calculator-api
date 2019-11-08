@@ -233,17 +233,27 @@ mkTeaserPayoutStr pointsTxt = do
 mkTeaserBlockResponse :: Either Text (Double, Text) -> BlockResponse
 mkTeaserBlockResponse resp =
   case resp of
-    Left txt -> BlockResponse [ Block "section" $ (Just $ BlockText "mrkdwn" txt) ]
+    Left txt -> BlockResponse "in_channel" [ Block "section" $ (Just $ BlockText "mrkdwn" txt) ]
     Right (points, txt) ->
-      BlockResponse $
+      BlockResponse "in_channel" $
         [ Block "section" $ (Just $ BlockText "mrkdwn" ("*" `append` (cs $ show $ points) `append` " Point Teaser Payouts*"))
         , Block "divider" Nothing
         , Block "section" $ (Just $ BlockText "mrkdwn" txt)
         ]
 
 data BlockResponse = BlockResponse
-  { blocks :: [Block]
-  } deriving (Show, Eq, Generic, FromJSON, ToJSON)
+  { block_response_type :: Text
+  , blocks :: [Block]
+  } deriving (Show, Eq, Generic)
+
+instance ToJSON BlockResponse where
+  toJSON (BlockResponse block_response_type blocks) =
+    object ["response_type" .= block_response_type, "blocks" .= blocks]
+
+instance FromJSON BlockResponse where
+  parseJSON (Object v) = BlockResponse
+    <$> v .: "response_type"
+    <*> v .: "blocks"
 
 data Block = Block
   { blockType :: Text
