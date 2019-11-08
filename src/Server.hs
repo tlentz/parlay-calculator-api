@@ -225,7 +225,7 @@ mkTeaserPayoutStr pointsTxt = do
         Just lst -> do
           let
             go :: (Int, Int) -> [Text] -> [Text]  
-            go (numTeams, odds) lst' = (cs $ "*" `append` (cs $ show numTeams) `append` " Teams: " `append` (formatAmerican odds)) : lst'
+            go (numTeams, odds) lst' = (cs $ "*" `append` (cs $ show numTeams) `append` " Teams:* " `append` (formatAmerican odds)) : lst'
           Right $ (points, T.unlines $ foldr go [] lst)
 
 
@@ -233,12 +233,12 @@ mkTeaserPayoutStr pointsTxt = do
 mkTeaserBlockResponse :: Either Text (Double, Text) -> BlockResponse
 mkTeaserBlockResponse resp =
   case resp of
-    Left txt -> BlockResponse [ Block "section" $ (Just $ BlockText "mrkdwn" txt True) ]
+    Left txt -> BlockResponse [ Block "section" $ (Just $ BlockText "mrkdwn" txt) ]
     Right (points, txt) ->
       BlockResponse $
-        [ Block "section" $ (Just $ BlockText "mrkdwn" ("*" `append` (cs $ show $ points) `append` "Point Teaser Payouts*") True)
+        [ Block "section" $ (Just $ BlockText "mrkdwn" ("*" `append` (cs $ show $ points) `append` "Point Teaser Payouts*"))
         , Block "divider" Nothing
-        , Block "section" $ (Just $ BlockText "mrkdwn" txt True)
+        , Block "section" $ (Just $ BlockText "mrkdwn" txt)
         ]
 
 data BlockResponse = BlockResponse
@@ -251,8 +251,11 @@ data Block = Block
   } deriving (Show, Eq, Generic)
 
 instance ToJSON Block where
-  toJSON (Block blockType blockText) =
-    object ["type" .= blockType, "text" .= blockText]
+  toJSON (Block blockType blockText) = object fields
+    where
+      consMay attr = maybe id ((:) . (attr .=))
+      conss = consMay "text" blockText
+      fields = conss ["type" .= blockType]
 
 instance FromJSON Block where
   parseJSON (Object v) = Block
@@ -262,15 +265,13 @@ instance FromJSON Block where
 data BlockText = BlockText
   { blockTextType :: Text
   , blockTextText :: Text
-  , blockTextEmoji :: Bool
   } deriving (Show, Eq, Generic)
 
 instance ToJSON BlockText where
-  toJSON (BlockText blockTextType blockTextText blockTextEmoji) =
-    object ["type" .= blockTextType, "text" .= blockTextText, "emoji" .= blockTextEmoji]
+  toJSON (BlockText blockTextType blockTextText) =
+    object ["type" .= blockTextType, "text" .= blockTextText]
 
 instance FromJSON BlockText where
   parseJSON (Object v) = BlockText
     <$> v .: "type"
     <*> v .: "text"
-    <*> v .: "emoji"
