@@ -21,15 +21,18 @@ import GHC.Generics (Generic)
 import Data.Aeson
 import Data.Monoid
 import Servant
-import Web.FormUrlEncoded(FromForm(..), ToForm(..))
+import Web.FormUrlEncoded (FromForm(..), ToForm(..))
 import Data.Text (Text, replace, append)
+import qualified Data.Text as T
 import Data.String.Conversions (cs)
 import Text.Read (readMaybe)
+import qualified Data.Map as Map
 
 type MyAPI
   = 
     "api" :> "ping" :> ReqBody '[FormUrlEncoded] SlackPayload :> Post '[JSON] SlackResponseMessage :<|>
-    "api" :> "calculate" :> ReqBody '[FormUrlEncoded] SlackPayload :> Post '[JSON] SlackResponseMessage
+    "api" :> "calculate" :> ReqBody '[FormUrlEncoded] SlackPayload :> Post '[JSON] SlackResponseMessage :<|>
+    "api" :> "football-teaser-payouts"  :> ReqBody '[FormUrlEncoded] SlackPayload :> Post '[JSON] BlockResponse
 
 mkSlackResponseMessage :: Text -> SlackResponseMessage
 mkSlackResponseMessage =
@@ -44,11 +47,14 @@ oddsHandler slackPayload = return $ mkSlackResponseMessage $
     Left str -> str
     Right odds -> calculateOdds odds
 
+teaserPayoutsHandler :: SlackPayload -> Handler BlockResponse
+teaserPayoutsHandler slackPayload = return $ mkTeaserBlockResponse $ mkTeaserPayoutStr (text slackPayload)
+
 myAPI :: Proxy MyAPI
 myAPI = Proxy :: Proxy MyAPI
 
 myServer :: Server MyAPI
-myServer =  pingHandler :<|> oddsHandler
+myServer =  pingHandler :<|> oddsHandler :<|> teaserPayoutsHandler
 
 runServer :: IO ()
 runServer = do
@@ -111,3 +117,160 @@ parseOdds txt =
   case readMaybe $ cs $ replace "+" "" txt of
     Nothing -> Left "Could not parse odds"
     Just odds -> if elem 0 odds then Left "Odds cannot contain 0" else Right odds
+
+---------------------------------------
+-- TEASERS ----------------------------
+-- supported teasers 6, 6.5, 7, 10, 13
+---------------------------------------
+
+footballTeaserPayouts :: Double -> String
+footballTeaserPayouts points = ""
+
+mkTeaserTable = ""
+
+teaserMap :: Map.Map Double [(Int, Int)]
+teaserMap =
+  Map.fromList 
+    [ ( 6
+      , [ ( 2, -110 )
+        , ( 3, 165 )
+        , ( 4, 265 )
+        , ( 5, 410 )
+        , ( 6, 610 )
+        , ( 7, 890 )
+        , ( 8, 1275 )
+        , ( 9, 1825 )
+        , ( 10, 2600 )
+        , ( 11, 3700 )
+        , ( 12, 5200 )
+        , ( 13, 7400 )
+        , ( 14, 10500 )
+        ]
+      )
+    , ( 6.5
+      , [ ( 2, -120 )
+        , ( 3, 150 )
+        , ( 4, 240 )
+        , ( 5, 365 )
+        , ( 6, 550 )
+        , ( 7, 800 )
+        , ( 8, 1100 )
+        , ( 9, 1550 )
+        , ( 10, 2150 )
+        , ( 11, 2950 )
+        , ( 12, 4050 )
+        , ( 13, 5600 )
+        , ( 14, 7600 )
+        ]
+      )
+      , ( 7
+        , [ ( 2, -135 )
+          , ( 3, 135 )
+          , ( 4, 215 )
+          , ( 5, 320 )
+          , ( 6, 460 )
+          , ( 7, 650 )
+          , ( 8, 900 )
+          , ( 9, 1250 )
+          , ( 10, 1725 )
+          , ( 11, 2350 )
+          , ( 12, 3200 )
+          , ( 13, 4300 )
+          , ( 14, 5900 )
+          ]
+        )
+        , ( 10
+          , [ ( 2, -210 )
+            , ( 3, 110 )
+            , ( 4, 128 )
+            , ( 5, 180 )
+            , ( 6, 245 )
+            , ( 7, 325 )
+            , ( 8, 425 )
+            , ( 9, 550 )
+            , ( 10, 710 )
+            , ( 11, 915 )
+            , ( 12, 1175 )
+            , ( 13, 1500 )
+            , ( 14, 1900 )
+            ]
+          )
+        , ( 13
+          , [ ( 2, -550 )
+            , ( 3, -295 )
+            , ( 4, -150 )
+            , ( 5, -112 )
+            , ( 6, 115 )
+            , ( 7, 145 )
+            , ( 8, 180 )
+            , ( 9, 220 )
+            , ( 10, 265 )
+            , ( 11, 320 )
+            , ( 12, 385 )
+            , ( 13, 470 )
+            , ( 14, 565 )
+            ]
+          )
+    ]
+
+mkTeaserPayoutStr :: Text -> Either Text (Double, Text)
+mkTeaserPayoutStr pointsTxt = do
+  let
+    invalidPointTxt = "*:x: Invalid point value.*\nSupported point values: *6, 6.5, 7, 10, or 13*"
+  case readMaybe $ cs pointsTxt :: Maybe Double of
+    Nothing -> Left invalidPointTxt
+    Just points ->
+      case Map.lookup points teaserMap of
+        Nothing -> Left invalidPointTxt
+        Just lst -> do
+          let
+            go :: (Int, Int) -> [Text] -> [Text]  
+            go (numTeams, odds) lst' = (cs $ "*" `append` (cs $ show numTeams) `append` " Teams: " `append` (formatAmerican odds)) : lst'
+          Right $ (points, T.unlines $ foldr go [] lst)
+
+
+
+mkTeaserBlockResponse :: Either Text (Double, Text) -> BlockResponse
+mkTeaserBlockResponse resp =
+  case resp of
+    Left txt -> BlockResponse [ Block "section" $ (Just $ BlockText "mrkdwn" txt True) ]
+    Right (points, txt) ->
+      BlockResponse $
+        [ Block "section" $ (Just $ BlockText "mrkdwn" ("*" `append` (cs $ show $ points) `append` "Point Teaser Payouts*") True)
+        , Block "divider" Nothing
+        , Block "section" $ (Just $ BlockText "mrkdwn" txt True)
+        ]
+
+data BlockResponse = BlockResponse
+  { blocks :: [Block]
+  } deriving (Show, Eq, Generic, FromJSON, ToJSON)
+
+data Block = Block
+  { blockType :: Text
+  , blockText :: Maybe BlockText
+  } deriving (Show, Eq, Generic)
+
+instance ToJSON Block where
+  toJSON (Block blockType blockText) =
+    object ["type" .= blockType, "text" .= blockText]
+
+instance FromJSON Block where
+  parseJSON (Object v) = Block
+    <$> v .: "type"
+    <*> v .: "text"
+
+data BlockText = BlockText
+  { blockTextType :: Text
+  , blockTextText :: Text
+  , blockTextEmoji :: Bool
+  } deriving (Show, Eq, Generic)
+
+instance ToJSON BlockText where
+  toJSON (BlockText blockTextType blockTextText blockTextEmoji) =
+    object ["type" .= blockTextType, "text" .= blockTextText, "emoji" .= blockTextEmoji]
+
+instance FromJSON BlockText where
+  parseJSON (Object v) = BlockText
+    <$> v .: "type"
+    <*> v .: "text"
+    <*> v .: "emoji"
